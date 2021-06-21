@@ -2,6 +2,8 @@
 
 Simple Interactive Terminal Todo App in Rust
 
+![thumbnail](thumbnail.png)
+
 ## Quick Start
 
 ```console
