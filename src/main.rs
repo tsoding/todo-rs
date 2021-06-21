@@ -1,5 +1,4 @@
 use ncurses::*;
-use std::cmp::*;
 
 const REGULAR_PAIR: i16 = 0;
 const HIGHLIGHT_PAIR: i16 = 1;
@@ -25,7 +24,9 @@ impl Ui {
     }
 
     fn list_element(&mut self, label: &str, id: Id) -> bool {
-        let id_curr = self.list_curr.expect("Not allowed to create list elements outside of lists");
+        let id_curr = self
+            .list_curr
+            .expect("Not allowed to create list elements outside of lists");
 
         self.label(label, {
             if id_curr == id {
@@ -50,7 +51,32 @@ impl Ui {
         self.list_curr = None;
     }
 
-    fn end(&mut self) {
+    fn end(&mut self) {}
+}
+
+enum Tab {
+    Todo,
+    Done,
+}
+
+impl Tab {
+    fn toggle(&self) -> Self {
+        match self {
+            Tab::Todo => Tab::Done,
+            Tab::Done => Tab::Todo,
+        }
+    }
+}
+
+fn list_up(list_curr: &mut usize) {
+    if *list_curr > 0 {
+        *list_curr -= 1;
+    }
+}
+
+fn list_down(list: &Vec<String>, list_curr: &mut usize) {
+    if *list_curr + 1 < list.len() {
+        *list_curr += 1;
     }
 }
 
@@ -67,15 +93,16 @@ fn main() {
     let mut todos: Vec<String> = vec![
         "Write the todo app".to_string(),
         "Buy a bread".to_string(),
-        "Make a cup of tea".to_string()
+        "Make a cup of tea".to_string(),
     ];
     let mut todo_curr: usize = 0;
     let mut dones: Vec<String> = vec![
         "Start the stream".to_string(),
         "Have a breakfast".to_string(),
-        "Make a cup of tea".to_string()
+        "Make a cup of tea".to_string(),
     ];
     let mut done_curr: usize = 0;
+    let mut tab = Tab::Todo;
 
     let mut ui = Ui::default();
     while !quit {
@@ -83,21 +110,24 @@ fn main() {
 
         ui.begin(0, 0);
         {
-            ui.label("TODO:", REGULAR_PAIR);
-            ui.begin_list(todo_curr);
-            for (index, todo) in todos.iter().enumerate() {
-                ui.list_element(&format!("- [ ] {}", todo), index);
+            match tab {
+                Tab::Todo => {
+                    ui.label("TODO:", REGULAR_PAIR);
+                    ui.begin_list(todo_curr);
+                    for (index, todo) in todos.iter().enumerate() {
+                        ui.list_element(&format!("- [ ] {}", todo), index);
+                    }
+                    ui.end_list();
+                }
+                Tab::Done => {
+                    ui.label("DONE:", REGULAR_PAIR);
+                    ui.begin_list(done_curr);
+                    for (index, done) in dones.iter().enumerate() {
+                        ui.list_element(&format!("- [x] {}", done), index);
+                    }
+                    ui.end_list();
+                }
             }
-            ui.end_list();
-
-            ui.label("------------------------------", REGULAR_PAIR);
-
-            ui.label("DONE:", REGULAR_PAIR);
-            ui.begin_list(0);
-            for (index, done) in dones.iter().enumerate() {
-                ui.list_element(&format!("- [x] {}", done), index + 1);
-            }
-            ui.end_list();
         }
         ui.end();
 
@@ -106,18 +136,32 @@ fn main() {
         let key = getch();
         match key as u8 as char {
             'q' => quit = true,
-            'w' => if todo_curr > 0 {
-                todo_curr -= 1;
+            'w' => match tab {
+                Tab::Todo => list_up(&mut todo_curr),
+                Tab::Done => list_up(&mut done_curr),
             },
-            's' => if todo_curr + 1 < todos.len() {
-                todo_curr += 1;
-            }
-            '\n' => {
-                if (todo_curr < todos.len()) {
-                    dones.push(todos.remove(todo_curr));
+            's' => match tab {
+                Tab::Todo => list_down(&todos, &mut todo_curr),
+                Tab::Done => list_down(&dones, &mut done_curr),
+            },
+            '\n' => match tab {
+                Tab::Todo => {
+                    if todo_curr < todos.len() {
+                        dones.push(todos.remove(todo_curr));
+                    }
                 }
+                Tab::Done => {
+                    if done_curr < dones.len() {
+                        todos.push(dones.remove(done_curr));
+                    }
+                }
+            },
+            '\t' => {
+                tab = tab.toggle();
             }
-            _ => {}
+            _ => {
+                // todos.push(format!("{}", key));
+            }
         }
     }
 
