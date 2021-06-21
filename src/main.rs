@@ -112,7 +112,8 @@ fn main() {
         {
             match tab {
                 Tab::Todo => {
-                    ui.label("TODO:", REGULAR_PAIR);
+                    ui.label("[TODO] DONE ", REGULAR_PAIR);
+                    ui.label("------------", REGULAR_PAIR);
                     ui.begin_list(todo_curr);
                     for (index, todo) in todos.iter().enumerate() {
                         ui.list_element(&format!("- [ ] {}", todo), index);
@@ -120,7 +121,8 @@ fn main() {
                     ui.end_list();
                 }
                 Tab::Done => {
-                    ui.label("DONE:", REGULAR_PAIR);
+                    ui.label(" TODO [DONE]", REGULAR_PAIR);
+                    ui.label("------------", REGULAR_PAIR);
                     ui.begin_list(done_curr);
                     for (index, done) in dones.iter().enumerate() {
                         ui.list_element(&format!("- [x] {}", done), index);
