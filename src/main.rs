@@ -80,6 +80,21 @@ fn list_down(list: &Vec<String>, list_curr: &mut usize) {
     }
 }
 
+fn list_transfer(list_dst: &mut Vec<String>, list_src: &mut Vec<String>, list_src_curr: &mut usize) {
+    if *list_src_curr < list_src.len() {
+        list_dst.push(list_src.remove(*list_src_curr));
+        if *list_src_curr >= list_src.len() && list_src.len() > 0 {
+            *list_src_curr = list_src.len() - 1;
+        }
+    }
+}
+
+// TODO: persist the state of the application
+// TODO: add new items to TODO
+// TODO: edit the items
+// TODO: keep track of date when the item was DONE
+// TODO: undo system
+
 fn main() {
     initscr();
     noecho();
@@ -147,16 +162,8 @@ fn main() {
                 Tab::Done => list_down(&dones, &mut done_curr),
             },
             '\n' => match tab {
-                Tab::Todo => {
-                    if todo_curr < todos.len() {
-                        dones.push(todos.remove(todo_curr));
-                    }
-                }
-                Tab::Done => {
-                    if done_curr < dones.len() {
-                        todos.push(dones.remove(done_curr));
-                    }
-                }
+                Tab::Todo => list_transfer(&mut dones, &mut todos, &mut todo_curr),
+                Tab::Done => list_transfer(&mut todos, &mut dones, &mut done_curr),
             },
             '\t' => {
                 tab = tab.toggle();
