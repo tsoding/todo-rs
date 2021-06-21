@@ -91,6 +91,7 @@ fn list_transfer(list_dst: &mut Vec<String>, list_src: &mut Vec<String>, list_sr
 
 // TODO: persist the state of the application
 // TODO: add new items to TODO
+// TODO: delete items
 // TODO: edit the items
 // TODO: keep track of date when the item was DONE
 // TODO: undo system
