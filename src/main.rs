@@ -94,7 +94,7 @@ fn list_transfer(list_dst: &mut Vec<String>, list_src: &mut Vec<String>, list_sr
 // TODO(#3): delete items
 // TODO(#4): edit the items
 // TODO(#5): keep track of date when the item was DONE
-// TODO: undo system
+// TODO(#6): undo system
 
 fn main() {
     initscr();
