@@ -237,7 +237,7 @@ fn save_state(todos: &[String], dones: &[String], file_path: &str) {
 // TODO(#4): edit the items
 // TODO(#5): keep track of date when the item was DONE
 // TODO(#6): undo system
-// TODO: save the state on SIGINT
+// TODO(#12): save the state on SIGINT
 // TODO: jump to the end and begining of the lists
 
 fn main() {
