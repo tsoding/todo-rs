@@ -16,6 +16,7 @@ $ cargo run TODO
 |---|---|
 |<kbd>k</kbd>, <kbd>j</kbd>|Move cursor up and down|
 |<kbd>Shift+K</kbd>, <kbd>Shift+J</kbd>|Drag the current item up and down|
+|<kbd>d</kbd>|Delete item|
 |<kbd>q</kbd>|Quit|
 |<kbd>TAB</kbd>|Switch between the TODO and DONE panels|
 |<kbd>Enter</kbd>|Perform an action on the highlighted UI element|
