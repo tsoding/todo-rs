@@ -262,7 +262,7 @@ fn main() {
 
         let mut x = 0;
         let mut y = 0;
-        getmaxyx(stdscr(), &mut y, &mut x); 
+        getmaxyx(stdscr(), &mut y, &mut x);
 
         ui.begin(Vec2::new(0, 0), LayoutKind::Horz);
         {
