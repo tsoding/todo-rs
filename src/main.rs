@@ -9,6 +9,118 @@ use std::process;
 const REGULAR_PAIR: i16 = 0;
 const HIGHLIGHT_PAIR: i16 = 1;
 
+/// Binds together data and behaviour for list manipulations
+struct TaskList {
+    pub list: Vec<String>,
+    pub curr: usize,
+}
+
+impl TaskList {
+    fn new(list: Vec<String>, curr: usize) -> Self {
+        Self { list, curr }
+    }
+
+    /// Moves current list item one line up
+    fn drag_up(&mut self) {
+        if self.curr > 0 {
+            self.list.swap(self.curr, self.curr - 1);
+            self.curr -= 1;
+        }
+    }
+
+    /// Moves current list item one line down
+    fn drag_down(&mut self) {
+        if self.curr + 1 < self.list.len() {
+            self.list.swap(self.curr, self.curr + 1);
+            self.curr += 1;
+        }
+    }
+
+    /// Navigate to previous list item
+    fn nav_up(&mut self) {
+        if self.curr > 0 {
+            self.curr -= 1;
+        }
+    }
+
+    /// Navigate to next list item
+    fn nav_down(&mut self) {
+        if self.curr + 1 < self.list.len() {
+            self.curr += 1;
+        }
+    }
+
+    /// Navigate to the beginning of the list
+    fn nav_first(&mut self) {
+        if self.curr > 0 {
+            self.curr = 0;
+        }
+    }
+
+    /// Navigate to the end of the list
+    fn nav_last(&mut self) {
+        if !self.list.is_empty() {
+            self.curr = self.list.len() - 1;
+        }
+    }
+
+    /// Erases currently selected list item
+    fn purge_curr(&mut self) {
+        if self.curr < self.list.len() {
+            self.list.remove(self.curr);
+            if !self.list.is_empty() && self.curr >= self.list.len() {
+                self.curr -= 1;
+            }
+        }
+    }
+}
+
+/// Represents state of task lists
+struct TaskManager {
+    /// Indicates an active task list (panel)
+    pub panel: Status,
+    pub todos: TaskList,
+    pub dones: TaskList,
+}
+
+impl TaskManager {
+    fn new(panel: Status, todos: TaskList, dones: TaskList) -> Self {
+        Self {
+            panel,
+            todos,
+            dones,
+        }
+    }
+
+    /// Returns an active task list (one which currently have focus)
+    fn active(&mut self) -> &mut TaskList {
+        match self.panel {
+            Status::Todo => &mut self.todos,
+            Status::Done => &mut self.dones,
+        }
+    }
+
+    /// Returns an inactive task list (without focus)
+    fn inactive(&mut self) -> &mut TaskList {
+        match self.panel {
+            Status::Done => &mut self.todos,
+            Status::Todo => &mut self.dones,
+        }
+    }
+
+    /// Moves selected list item from active to inactive panel (task list)
+    fn transfer(&mut self) {
+        let curr = self.active().curr;
+        if curr < self.active().list.len() {
+            let removed_elem = self.active().list.remove(curr);
+            self.inactive().list.push(removed_elem);
+            if curr >= self.active().list.len() && !self.active().list.is_empty() {
+                self.active().curr = self.active().list.len() - 1;
+            }
+        }
+    }
+}
+
 #[derive(Default, Copy, Clone)]
 struct Vec2 {
     x: i32,
@@ -170,57 +282,6 @@ fn parse_item(line: &str) -> Option<(Status, &str)> {
     todo_item.or(done_item)
 }
 
-fn list_drag_up(list: &mut [String], list_curr: &mut usize) {
-    if *list_curr > 0 {
-        list.swap(*list_curr, *list_curr - 1);
-        *list_curr -= 1;
-    }
-}
-
-fn list_drag_down(list: &mut [String], list_curr: &mut usize) {
-    if *list_curr + 1 < list.len() {
-        list.swap(*list_curr, *list_curr + 1);
-        *list_curr += 1;
-    }
-}
-
-fn list_up(list_curr: &mut usize) {
-    if *list_curr > 0 {
-        *list_curr -= 1;
-    }
-}
-
-fn list_down(list: &[String], list_curr: &mut usize) {
-    if *list_curr + 1 < list.len() {
-        *list_curr += 1;
-    }
-}
-
-fn list_first(list_curr: &mut usize) {
-    if *list_curr > 0 {
-        *list_curr = 0;
-    }
-}
-
-fn list_last(list: &[String], list_curr: &mut usize) {
-    if !list.is_empty() {
-        *list_curr = list.len() - 1;
-    }
-}
-
-fn list_transfer(
-    list_dst: &mut Vec<String>,
-    list_src: &mut Vec<String>,
-    list_src_curr: &mut usize,
-) {
-    if *list_src_curr < list_src.len() {
-        list_dst.push(list_src.remove(*list_src_curr));
-        if *list_src_curr >= list_src.len() && !list_src.is_empty() {
-            *list_src_curr = list_src.len() - 1;
-        }
-    }
-}
-
 fn load_state(todos: &mut Vec<String>, dones: &mut Vec<String>, file_path: &str) -> io::Result<()> {
     let file = File::open(file_path)?;
     for (index, line) in io::BufReader::new(file).lines().enumerate() {
@@ -247,7 +308,6 @@ fn save_state(todos: &[String], dones: &[String], file_path: &str) {
 }
 
 // TODO(#2): add new items to TODO
-// TODO(#3): delete items
 // TODO(#4): edit the items
 // TODO(#5): keep track of date when the item was DONE
 // TODO(#6): undo system
@@ -267,9 +327,9 @@ fn main() {
     };
 
     let mut todos = Vec::<String>::new();
-    let mut todo_curr: usize = 0;
+    let todo_curr: usize = 0;
     let mut dones = Vec::<String>::new();
-    let mut done_curr: usize = 0;
+    let done_curr: usize = 0;
 
     let mut notification: String;
 
@@ -296,9 +356,14 @@ fn main() {
     init_pair(HIGHLIGHT_PAIR, COLOR_BLACK, COLOR_WHITE);
 
     let mut quit = false;
-    let mut panel = Status::Todo;
+    let panel = Status::Todo;
 
     let mut ui = Ui::default();
+    let mut tasks = TaskManager::new(
+        panel,
+        TaskList::new(todos, todo_curr),
+        TaskList::new(dones, done_curr),
+    );
     while !quit {
         erase();
 
@@ -319,17 +384,17 @@ fn main() {
                     ui.label_fixed_width(
                         "TODO",
                         x / 2,
-                        if panel == Status::Todo {
+                        if tasks.panel == Status::Todo {
                             HIGHLIGHT_PAIR
                         } else {
                             REGULAR_PAIR
                         },
                     );
-                    for (index, todo) in todos.iter().enumerate() {
+                    for (index, todo) in tasks.todos.list.iter().enumerate() {
                         ui.label_fixed_width(
                             &format!("- [ ] {}", todo),
                             x / 2,
-                            if index == todo_curr && panel == Status::Todo {
+                            if index == tasks.todos.curr && tasks.panel == Status::Todo {
                                 HIGHLIGHT_PAIR
                             } else {
                                 REGULAR_PAIR
@@ -344,17 +409,17 @@ fn main() {
                     ui.label_fixed_width(
                         "DONE",
                         x / 2,
-                        if panel == Status::Done {
+                        if tasks.panel == Status::Done {
                             HIGHLIGHT_PAIR
                         } else {
                             REGULAR_PAIR
                         },
                     );
-                    for (index, done) in dones.iter().enumerate() {
+                    for (index, done) in tasks.dones.list.iter().enumerate() {
                         ui.label_fixed_width(
                             &format!("- [x] {}", done),
                             x / 2,
-                            if index == done_curr && panel == Status::Done {
+                            if index == tasks.dones.curr && tasks.panel == Status::Done {
                                 HIGHLIGHT_PAIR
                             } else {
                                 REGULAR_PAIR
@@ -373,42 +438,23 @@ fn main() {
         let key = getch();
         match key as u8 as char {
             'q' => quit = true,
-            'K' => match panel {
-                Status::Todo => list_drag_up(&mut todos, &mut todo_curr),
-                Status::Done => list_drag_up(&mut dones, &mut done_curr),
-            },
-            'J' => match panel {
-                Status::Todo => list_drag_down(&mut todos, &mut todo_curr),
-                Status::Done => list_drag_down(&mut dones, &mut done_curr),
-            },
-            'k' => match panel {
-                Status::Todo => list_up(&mut todo_curr),
-                Status::Done => list_up(&mut done_curr),
-            },
-            'j' => match panel {
-                Status::Todo => list_down(&todos, &mut todo_curr),
-                Status::Done => list_down(&dones, &mut done_curr),
-            },
-            'g' => match panel {
-                Status::Todo => list_first(&mut todo_curr),
-                Status::Done => list_first(&mut done_curr),
-            },
-            'G' => match panel {
-                Status::Todo => list_last(&todos, &mut todo_curr),
-                Status::Done => list_last(&dones, &mut done_curr),
-            },
-            '\n' => match panel {
-                Status::Todo => {
-                    list_transfer(&mut dones, &mut todos, &mut todo_curr);
-                    notification.push_str("DONE!")
-                }
-                Status::Done => {
-                    list_transfer(&mut todos, &mut dones, &mut done_curr);
-                    notification.push_str("No, not done yet...")
-                }
-            },
-            '\t' => {
-                panel = panel.toggle();
+            'K' => tasks.active().drag_up(),
+            'J' => tasks.active().drag_down(),
+            'k' => tasks.active().nav_up(),
+            'j' => tasks.active().nav_down(),
+            'g' => tasks.active().nav_first(),
+            'G' => tasks.active().nav_last(),
+            'd' => tasks.active().purge_curr(),
+            '\n' => {
+                tasks.transfer();
+
+                notification.push_str(match tasks.panel {
+                    Status::Todo => "DONE!",
+                    Status::Done => "No, not done yet...",
+                });
+            }
+            '\t' | 'h' | 'l' => {
+                tasks.panel = tasks.panel.toggle();
             }
             _ => {
                 // todos.push(format!("{}", key));
@@ -418,6 +464,6 @@ fn main() {
 
     endwin();
 
-    save_state(&todos, &dones, &file_path);
+    save_state(&tasks.todos.list, &tasks.dones.list, &file_path);
     println!("Saved state to {}", file_path);
 }
