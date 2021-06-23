@@ -3,62 +3,134 @@ use std::fs::File;
 use std::io::{self, Write, BufRead};
 use std::env;
 use std::process;
+use std::ops::{Add, Mul};
+use std::cmp;
 
 const REGULAR_PAIR: i16 = 0;
 const HIGHLIGHT_PAIR: i16 = 1;
 
-type Id = usize;
+#[derive(Default, Copy, Clone)]
+struct Vec2 {
+    x: i32,
+    y: i32,
+}
+
+impl Add for Vec2 {
+    type Output = Vec2;
+
+    fn add (self, rhs: Vec2) -> Vec2 {
+        Vec2 {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl Mul for Vec2 {
+    type Output = Vec2;
+
+    fn mul (self, rhs: Vec2) -> Vec2 {
+        Vec2 {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+        }
+    }
+}
+
+impl Vec2 {
+    fn new(x: i32, y: i32) -> Self {
+        Self {x, y}
+    }
+}
+
+enum LayoutKind {
+    Vert,
+    Horz
+}
+
+struct Layout {
+    kind: LayoutKind,
+    pos: Vec2,
+    size: Vec2,
+}
+
+impl Layout {
+    fn available_pos(&self) -> Vec2 {
+        use LayoutKind::*;
+        match self.kind {
+            Horz => self.pos + self.size * Vec2::new(1, 0),
+            Vert => self.pos + self.size * Vec2::new(0, 1),
+        }
+    }
+
+    fn add_widget(&mut self, size: Vec2) {
+        use LayoutKind::*;
+        match self.kind {
+            Horz => {
+                self.size.x += size.x;
+                self.size.y = cmp::max(self.size.y, size.y);
+            }
+            Vert => {
+                self.size.x = cmp::max(self.size.x, size.x);
+                self.size.y += size.y;
+            }
+        }
+    }
+}
 
 #[derive(Default)]
 struct Ui {
-    list_curr: Option<Id>,
-    row: usize,
-    col: usize,
+    layouts: Vec<Layout>
 }
 
 impl Ui {
-    fn begin(&mut self, row: usize, col: usize) {
-        self.row = row;
-        self.col = col;
+    fn begin(&mut self, pos: Vec2, kind: LayoutKind) {
+        assert!(self.layouts.is_empty());
+        self.layouts.push(Layout {
+            kind,
+            pos,
+            size: Vec2::new(0, 0)
+        })
     }
 
-    fn begin_list(&mut self, id: Id) {
-        assert!(self.list_curr.is_none(), "Nested lists are not allowed!");
-        self.list_curr = Some(id);
-    }
-
-    fn list_element(&mut self, label: &str, id: Id) -> bool {
-        let id_curr = self
-            .list_curr
-            .expect("Not allowed to create list elements outside of lists");
-
-        self.label(label, {
-            if id_curr == id {
-                HIGHLIGHT_PAIR
-            } else {
-                REGULAR_PAIR
-            }
+    fn begin_layout(&mut self, kind: LayoutKind) {
+        let layout = self.layouts.last()
+            .expect("Can't create a layout outside of Ui::begin() and Ui::end()");
+        let pos = layout.available_pos();
+        self.layouts.push(Layout {
+            kind,
+            pos,
+            size: Vec2::new(0, 0)
         });
+    }
 
-        return false;
+    fn end_layout(&mut self) {
+        let layout = self.layouts.pop()
+            .expect("Unbalanced Ui::begin_layout() and Ui::end_layout() calls.");
+        self.layouts.last_mut()
+            .expect("Unbalanced Ui::begin_layout() and Ui::end_layout() calls.")
+            .add_widget(layout.size);
     }
 
     fn label(&mut self, text: &str, pair: i16) {
-        mv(self.row as i32, self.col as i32);
+        let layout = self.layouts.last_mut().expect("Trying to render label outside of any layout");
+        let pos = layout.available_pos();
+
+        mv(pos.y, pos.x);
         attron(COLOR_PAIR(pair));
         addstr(text);
         attroff(COLOR_PAIR(pair));
-        self.row += 1;
+
+        layout.add_widget(Vec2::new(text.len() as i32, 1));
     }
 
-    fn end_list(&mut self) {
-        self.list_curr = None;
+    fn end(&mut self) {
+        self.layouts.pop()
+            .expect("Unbalanced Ui::begin() and Ui::end() calls.");
     }
-
-    fn end(&mut self) {}
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 enum Status {
     Todo,
     Done,
@@ -175,28 +247,35 @@ fn main() {
     while !quit {
         erase();
 
-        ui.begin(0, 0);
+        ui.begin(Vec2::new(0, 0), LayoutKind::Horz);
         {
-            match tab {
-                Status::Todo => {
-                    ui.label("[TODO] DONE ", REGULAR_PAIR);
-                    ui.label("------------", REGULAR_PAIR);
-                    ui.begin_list(todo_curr);
-                    for (index, todo) in todos.iter().enumerate() {
-                        ui.list_element(&format!("- [ ] {}", todo), index);
-                    }
-                    ui.end_list();
-                }
-                Status::Done => {
-                    ui.label(" TODO [DONE]", REGULAR_PAIR);
-                    ui.label("------------", REGULAR_PAIR);
-                    ui.begin_list(done_curr);
-                    for (index, done) in dones.iter().enumerate() {
-                        ui.list_element(&format!("- [x] {}", done), index);
-                    }
-                    ui.end_list();
+            ui.begin_layout(LayoutKind::Vert);
+            {
+                ui.label("TODO:", REGULAR_PAIR);
+                for (index, todo) in todos.iter().enumerate() {
+                    ui.label(&format!("- [ ] {}", todo),
+                             if index == todo_curr && tab == Status::Todo {
+                                 HIGHLIGHT_PAIR
+                             } else {
+                                 REGULAR_PAIR
+                             });
                 }
             }
+            ui.end_layout();
+
+            ui.begin_layout(LayoutKind::Vert);
+            {
+                ui.label("DONE:", REGULAR_PAIR);
+                for (index, done) in dones.iter().enumerate() {
+                    ui.label(&format!("- [x] {}", done),
+                             if index == done_curr && tab == Status::Done {
+                                 HIGHLIGHT_PAIR
+                             } else {
+                                 REGULAR_PAIR
+                             });
+                }
+            }
+            ui.end_layout();
         }
         ui.end();
 
