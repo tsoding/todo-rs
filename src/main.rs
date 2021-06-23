@@ -149,6 +149,7 @@ impl Ui {
 enum Status {
     Todo,
     Done,
+    Deleted,
 }
 
 impl Status {
@@ -156,6 +157,7 @@ impl Status {
         match self {
             Status::Todo => Status::Done,
             Status::Done => Status::Todo,
+            _ => unreachable!(),
         }
     }
 }
@@ -167,7 +169,11 @@ fn parse_item(line: &str) -> Option<(Status, &str)> {
     let done_item = line
         .strip_prefix("DONE: ")
         .map(|title| (Status::Done, title));
-    todo_item.or(done_item)
+    let deleted_item = line
+        .strip_prefix("DELETED: ")
+        .map(|title| (Status::Deleted, title));
+
+    todo_item.or(done_item).or(deleted_item)
 }
 
 fn list_drag_up(list: &mut [String], list_curr: &mut usize) {
@@ -221,12 +227,22 @@ fn list_transfer(
     }
 }
 
-fn load_state(todos: &mut Vec<String>, dones: &mut Vec<String>, file_path: &str) -> io::Result<()> {
+fn delete(list: &mut Vec<String>, list_curr: &mut usize, deleteds: &mut Vec<String>) {
+    list_transfer(deleteds, list, list_curr)
+}
+
+fn load_state(
+    todos: &mut Vec<String>,
+    dones: &mut Vec<String>,
+    deleteds: &mut Vec<String>,
+    file_path: &str,
+) -> io::Result<()> {
     let file = File::open(file_path)?;
     for (index, line) in io::BufReader::new(file).lines().enumerate() {
         match parse_item(&line?) {
             Some((Status::Todo, title)) => todos.push(title.to_string()),
             Some((Status::Done, title)) => dones.push(title.to_string()),
+            Some((Status::Deleted, title)) => deleteds.push(title.to_string()),
             None => {
                 eprintln!("{}:{}: ERROR: ill-formed item line", file_path, index + 1);
                 process::exit(1);
@@ -236,7 +252,7 @@ fn load_state(todos: &mut Vec<String>, dones: &mut Vec<String>, file_path: &str)
     Ok(())
 }
 
-fn save_state(todos: &[String], dones: &[String], file_path: &str) {
+fn save_state(todos: &[String], dones: &[String], deleteds: &[String], file_path: &str) {
     let mut file = File::create(file_path).unwrap();
     for todo in todos.iter() {
         writeln!(file, "TODO: {}", todo).unwrap();
@@ -244,10 +260,12 @@ fn save_state(todos: &[String], dones: &[String], file_path: &str) {
     for done in dones.iter() {
         writeln!(file, "DONE: {}", done).unwrap();
     }
+    for deleted in deleteds.iter() {
+        writeln!(file, "DELETED: {}", deleted).unwrap()
+    }
 }
 
 // TODO(#2): add new items to TODO
-// TODO(#3): delete items
 // TODO(#4): edit the items
 // TODO(#5): keep track of date when the item was DONE
 // TODO(#6): undo system
@@ -270,10 +288,12 @@ fn main() {
     let mut todo_curr: usize = 0;
     let mut dones = Vec::<String>::new();
     let mut done_curr: usize = 0;
+    let mut deleteds = Vec::<String>::new();
+    let mut deleteds_curr: usize = 0;
 
     let mut notification: String;
 
-    match load_state(&mut todos, &mut dones, &file_path) {
+    match load_state(&mut todos, &mut dones, &mut deleteds, &file_path) {
         Ok(()) => notification = format!("Loaded file {}", file_path),
         Err(error) => {
             if error.kind() == ErrorKind::NotFound {
@@ -373,29 +393,40 @@ fn main() {
         let key = getch();
         match key as u8 as char {
             'q' => quit = true,
+            'd' => match panel {
+                Status::Todo => delete(&mut todos, &mut todo_curr, &mut deleteds),
+                Status::Done => delete(&mut dones, &mut done_curr, &mut deleteds),
+                _ => (),
+            },
             'K' => match panel {
                 Status::Todo => list_drag_up(&mut todos, &mut todo_curr),
                 Status::Done => list_drag_up(&mut dones, &mut done_curr),
+                _ => (),
             },
             'J' => match panel {
                 Status::Todo => list_drag_down(&mut todos, &mut todo_curr),
                 Status::Done => list_drag_down(&mut dones, &mut done_curr),
+                _ => (),
             },
             'k' => match panel {
                 Status::Todo => list_up(&mut todo_curr),
                 Status::Done => list_up(&mut done_curr),
+                _ => (),
             },
             'j' => match panel {
                 Status::Todo => list_down(&todos, &mut todo_curr),
                 Status::Done => list_down(&dones, &mut done_curr),
+                _ => (),
             },
             'g' => match panel {
                 Status::Todo => list_first(&mut todo_curr),
                 Status::Done => list_first(&mut done_curr),
+                _ => (),
             },
             'G' => match panel {
                 Status::Todo => list_last(&todos, &mut todo_curr),
                 Status::Done => list_last(&dones, &mut done_curr),
+                _ => (),
             },
             '\n' => match panel {
                 Status::Todo => {
@@ -406,6 +437,7 @@ fn main() {
                     list_transfer(&mut todos, &mut dones, &mut done_curr);
                     notification.push_str("No, not done yet...")
                 }
+                _ => (),
             },
             '\t' => {
                 panel = panel.toggle();
@@ -418,6 +450,6 @@ fn main() {
 
     endwin();
 
-    save_state(&todos, &dones, &file_path);
+    save_state(&todos, &dones, &deleteds, &file_path);
     println!("Saved state to {}", file_path);
 }
