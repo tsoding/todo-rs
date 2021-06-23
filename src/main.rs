@@ -2,7 +2,7 @@ use ncurses::*;
 use std::cmp;
 use std::env;
 use std::fs::File;
-use std::io::{self, BufRead, Write, ErrorKind};
+use std::io::{self, BufRead, ErrorKind, Write};
 use std::ops::{Add, Mul};
 use std::process;
 
@@ -274,10 +274,15 @@ fn main() {
 
     match load_state(&mut todos, &mut dones, &file_path) {
         Ok(()) => notification = format!("Loaded file {}", file_path),
-        Err(error) => if error.kind() == ErrorKind::NotFound {
-            notification = format!("New file {}", file_path)
-        } else {
-            panic!("Could not load state from file `{}`: {:?}", file_path, error);
+        Err(error) => {
+            if error.kind() == ErrorKind::NotFound {
+                notification = format!("New file {}", file_path)
+            } else {
+                panic!(
+                    "Could not load state from file `{}`: {:?}",
+                    file_path, error
+                );
+            }
         }
     };
 
