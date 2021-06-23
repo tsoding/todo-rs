@@ -15,12 +15,18 @@ jobs:
         with:
           command: build
           args: --release --all-features
+        env:
+          RUSTFLAGS: -D warnings
       - uses: actions-rs/cargo@v1
         with:
           command: test
+        env:
+          RUSTFLAGS: -D warnings
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
+        env:
+          RUSTFLAGS: -D warnings
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
