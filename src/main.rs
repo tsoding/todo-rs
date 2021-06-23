@@ -169,6 +169,20 @@ fn parse_item(line: &str) -> Option<(Status, &str)> {
     todo_item.or(done_item)
 }
 
+fn list_drag_up(list: &mut [String], list_curr: &mut usize) {
+    if *list_curr > 0 {
+        list.swap(*list_curr, *list_curr - 1);
+        *list_curr -= 1;
+    }
+}
+
+fn list_drag_down(list: &mut [String], list_curr: &mut usize) {
+    if *list_curr + 1 < list.len() {
+        list.swap(*list_curr, *list_curr + 1);
+        *list_curr += 1;
+    }
+}
+
 fn list_up(list_curr: &mut usize) {
     if *list_curr > 0 {
         *list_curr -= 1;
@@ -224,6 +238,7 @@ fn save_state(todos: &[String], dones: &[String], file_path: &str) {
 // TODO(#5): keep track of date when the item was DONE
 // TODO(#6): undo system
 // TODO: save the state on SIGINT
+// TODO: jump to the end and begining of the lists
 
 fn main() {
     let mut args = env::args();
@@ -323,6 +338,14 @@ fn main() {
         let key = getch();
         match key as u8 as char {
             'q' => quit = true,
+            'W' => match panel {
+                Status::Todo => list_drag_up(&mut todos, &mut todo_curr),
+                Status::Done => list_drag_up(&mut dones, &mut done_curr),
+            }
+            'S' => match panel {
+                Status::Todo => list_drag_down(&mut todos, &mut todo_curr),
+                Status::Done => list_drag_down(&mut dones, &mut done_curr),
+            }
             'w' => match panel {
                 Status::Todo => list_up(&mut todo_curr),
                 Status::Done => list_up(&mut done_curr),
