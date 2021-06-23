@@ -155,18 +155,13 @@ impl Status {
 }
 
 fn parse_item(line: &str) -> Option<(Status, &str)> {
-    let todo_prefix = "TODO: ";
-    let done_prefix = "DONE: ";
-
-    if line.starts_with(todo_prefix) {
-        return Some((Status::Todo, &line[todo_prefix.len()..]));
-    }
-
-    if line.starts_with(done_prefix) {
-        return Some((Status::Done, &line[done_prefix.len()..]));
-    }
-
-    return None;
+    let todo_item = line
+        .strip_prefix("TODO: ")
+        .map(|title| (Status::Todo, title));
+    let done_item = line
+        .strip_prefix("DONE: ")
+        .map(|title| (Status::Done, title));
+    todo_item.or(done_item)
 }
 
 fn list_up(list_curr: &mut usize) {
@@ -175,7 +170,7 @@ fn list_up(list_curr: &mut usize) {
     }
 }
 
-fn list_down(list: &Vec<String>, list_curr: &mut usize) {
+fn list_down(list: &[String], list_curr: &mut usize) {
     if *list_curr + 1 < list.len() {
         *list_curr += 1;
     }
@@ -188,7 +183,7 @@ fn list_transfer(
 ) {
     if *list_src_curr < list_src.len() {
         list_dst.push(list_src.remove(*list_src_curr));
-        if *list_src_curr >= list_src.len() && list_src.len() > 0 {
+        if *list_src_curr >= list_src.len() && !list_src.is_empty() {
             *list_src_curr = list_src.len() - 1;
         }
     }
@@ -208,7 +203,7 @@ fn load_state(todos: &mut Vec<String>, dones: &mut Vec<String>, file_path: &str)
     }
 }
 
-fn save_state(todos: &Vec<String>, dones: &Vec<String>, file_path: &str) {
+fn save_state(todos: &[String], dones: &[String], file_path: &str) {
     let mut file = File::create(file_path).unwrap();
     for todo in todos.iter() {
         writeln!(file, "TODO: {}", todo).unwrap();
@@ -264,7 +259,14 @@ fn main() {
         {
             ui.begin_layout(LayoutKind::Vert);
             {
-                ui.label("TODO:", REGULAR_PAIR);
+                ui.label(
+                    "TODO",
+                    if tab == Status::Todo {
+                        HIGHLIGHT_PAIR
+                    } else {
+                        REGULAR_PAIR
+                    },
+                );
                 for (index, todo) in todos.iter().enumerate() {
                     ui.label(
                         &format!("- [ ] {}", todo),
@@ -280,7 +282,14 @@ fn main() {
 
             ui.begin_layout(LayoutKind::Vert);
             {
-                ui.label("DONE:", REGULAR_PAIR);
+                ui.label(
+                    "DONE",
+                    if tab == Status::Done {
+                        HIGHLIGHT_PAIR
+                    } else {
+                        REGULAR_PAIR
+                    },
+                );
                 for (index, done) in dones.iter().enumerate() {
                     ui.label(
                         &format!("- [x] {}", done),
