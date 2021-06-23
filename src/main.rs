@@ -202,7 +202,7 @@ fn list_first(list_curr: &mut usize) {
 }
 
 fn list_last(list: &[String], list_curr: &mut usize) {
-    if list.len() > 0 {
+    if !list.is_empty() {
         *list_curr = list.len() - 1;
     }
 }
@@ -388,8 +388,8 @@ fn main() {
                 Status::Done => list_first(&mut done_curr),
             },
             'G' => match panel {
-                Status::Todo => list_last(&mut todos, &mut todo_curr),
-                Status::Done => list_last(&mut dones, &mut done_curr),
+                Status::Todo => list_last(&todos, &mut todo_curr),
+                Status::Done => list_last(&dones, &mut done_curr),
             },
             '\n' => match panel {
                 Status::Todo => {
