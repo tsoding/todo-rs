@@ -195,6 +195,18 @@ fn list_down(list: &[String], list_curr: &mut usize) {
     }
 }
 
+fn list_first(list_curr: &mut usize) {
+    if *list_curr > 0 {
+        *list_curr = 0;
+    }
+}
+
+fn list_last(list: &[String], list_curr: &mut usize) {
+    if list.len() > 0 {
+        *list_curr = list.len() - 1;
+    }
+}
+
 fn list_transfer(
     list_dst: &mut Vec<String>,
     list_src: &mut Vec<String>,
@@ -353,6 +365,14 @@ fn main() {
             's' => match panel {
                 Status::Todo => list_down(&todos, &mut todo_curr),
                 Status::Done => list_down(&dones, &mut done_curr),
+            },
+            'g' => match panel {
+                Status::Todo => list_first(&mut todo_curr),
+                Status::Done => list_first(&mut done_curr),
+            },
+            'G' => match panel {
+                Status::Todo => list_last(&mut todos, &mut todo_curr),
+                Status::Done => list_last(&mut dones, &mut done_curr),
             },
             '\n' => match panel {
                 Status::Todo => list_transfer(&mut dones, &mut todos, &mut todo_curr),
