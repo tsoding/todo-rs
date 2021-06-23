@@ -1,10 +1,10 @@
 use ncurses::*;
-use std::fs::File;
-use std::io::{self, Write, BufRead};
-use std::env;
-use std::process;
-use std::ops::{Add, Mul};
 use std::cmp;
+use std::env;
+use std::fs::File;
+use std::io::{self, BufRead, Write};
+use std::ops::{Add, Mul};
+use std::process;
 
 const REGULAR_PAIR: i16 = 0;
 const HIGHLIGHT_PAIR: i16 = 1;
@@ -18,7 +18,7 @@ struct Vec2 {
 impl Add for Vec2 {
     type Output = Vec2;
 
-    fn add (self, rhs: Vec2) -> Vec2 {
+    fn add(self, rhs: Vec2) -> Vec2 {
         Vec2 {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -29,7 +29,7 @@ impl Add for Vec2 {
 impl Mul for Vec2 {
     type Output = Vec2;
 
-    fn mul (self, rhs: Vec2) -> Vec2 {
+    fn mul(self, rhs: Vec2) -> Vec2 {
         Vec2 {
             x: self.x * rhs.x,
             y: self.y * rhs.y,
@@ -39,13 +39,13 @@ impl Mul for Vec2 {
 
 impl Vec2 {
     fn new(x: i32, y: i32) -> Self {
-        Self {x, y}
+        Self { x, y }
     }
 }
 
 enum LayoutKind {
     Vert,
-    Horz
+    Horz,
 }
 
 struct Layout {
@@ -80,7 +80,7 @@ impl Layout {
 
 #[derive(Default)]
 struct Ui {
-    layouts: Vec<Layout>
+    layouts: Vec<Layout>,
 }
 
 impl Ui {
@@ -89,31 +89,39 @@ impl Ui {
         self.layouts.push(Layout {
             kind,
             pos,
-            size: Vec2::new(0, 0)
+            size: Vec2::new(0, 0),
         })
     }
 
     fn begin_layout(&mut self, kind: LayoutKind) {
-        let layout = self.layouts.last()
+        let layout = self
+            .layouts
+            .last()
             .expect("Can't create a layout outside of Ui::begin() and Ui::end()");
         let pos = layout.available_pos();
         self.layouts.push(Layout {
             kind,
             pos,
-            size: Vec2::new(0, 0)
+            size: Vec2::new(0, 0),
         });
     }
 
     fn end_layout(&mut self) {
-        let layout = self.layouts.pop()
+        let layout = self
+            .layouts
+            .pop()
             .expect("Unbalanced Ui::begin_layout() and Ui::end_layout() calls.");
-        self.layouts.last_mut()
+        self.layouts
+            .last_mut()
             .expect("Unbalanced Ui::begin_layout() and Ui::end_layout() calls.")
             .add_widget(layout.size);
     }
 
     fn label(&mut self, text: &str, pair: i16) {
-        let layout = self.layouts.last_mut().expect("Trying to render label outside of any layout");
+        let layout = self
+            .layouts
+            .last_mut()
+            .expect("Trying to render label outside of any layout");
         let pos = layout.available_pos();
 
         mv(pos.y, pos.x);
@@ -125,7 +133,8 @@ impl Ui {
     }
 
     fn end(&mut self) {
-        self.layouts.pop()
+        self.layouts
+            .pop()
             .expect("Unbalanced Ui::begin() and Ui::end() calls.");
     }
 }
@@ -150,11 +159,11 @@ fn parse_item(line: &str) -> Option<(Status, &str)> {
     let done_prefix = "DONE: ";
 
     if line.starts_with(todo_prefix) {
-        return Some((Status::Todo, &line[todo_prefix.len()..]))
+        return Some((Status::Todo, &line[todo_prefix.len()..]));
     }
 
     if line.starts_with(done_prefix) {
-        return Some((Status::Done, &line[done_prefix.len()..]))
+        return Some((Status::Done, &line[done_prefix.len()..]));
     }
 
     return None;
@@ -172,7 +181,11 @@ fn list_down(list: &Vec<String>, list_curr: &mut usize) {
     }
 }
 
-fn list_transfer(list_dst: &mut Vec<String>, list_src: &mut Vec<String>, list_src_curr: &mut usize) {
+fn list_transfer(
+    list_dst: &mut Vec<String>,
+    list_src: &mut Vec<String>,
+    list_src_curr: &mut usize,
+) {
     if *list_src_curr < list_src.len() {
         list_dst.push(list_src.remove(*list_src_curr));
         if *list_src_curr >= list_src.len() && list_src.len() > 0 {
@@ -253,12 +266,14 @@ fn main() {
             {
                 ui.label("TODO:", REGULAR_PAIR);
                 for (index, todo) in todos.iter().enumerate() {
-                    ui.label(&format!("- [ ] {}", todo),
-                             if index == todo_curr && tab == Status::Todo {
-                                 HIGHLIGHT_PAIR
-                             } else {
-                                 REGULAR_PAIR
-                             });
+                    ui.label(
+                        &format!("- [ ] {}", todo),
+                        if index == todo_curr && tab == Status::Todo {
+                            HIGHLIGHT_PAIR
+                        } else {
+                            REGULAR_PAIR
+                        },
+                    );
                 }
             }
             ui.end_layout();
@@ -267,12 +282,14 @@ fn main() {
             {
                 ui.label("DONE:", REGULAR_PAIR);
                 for (index, done) in dones.iter().enumerate() {
-                    ui.label(&format!("- [x] {}", done),
-                             if index == done_curr && tab == Status::Done {
-                                 HIGHLIGHT_PAIR
-                             } else {
-                                 REGULAR_PAIR
-                             });
+                    ui.label(
+                        &format!("- [x] {}", done),
+                        if index == done_curr && tab == Status::Done {
+                            HIGHLIGHT_PAIR
+                        } else {
+                            REGULAR_PAIR
+                        },
+                    );
                 }
             }
             ui.end_layout();
