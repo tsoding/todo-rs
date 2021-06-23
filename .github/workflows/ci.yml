@@ -1,0 +1,27 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    name: Rust project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -qq libncurses-dev libpcre2-dev libncursesw5-dev
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release --all-features
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
