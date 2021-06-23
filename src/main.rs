@@ -118,6 +118,7 @@ impl Ui {
     }
 
     fn label_fixed_width(&mut self, text: &str, width: i32, pair: i16) {
+        // TODO(#17): Ui::label_fixed_width() does not elide the text when width < text.len()
         let layout = self
             .layouts
             .last_mut()
