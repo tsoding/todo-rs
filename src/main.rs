@@ -5,6 +5,8 @@ use std::fs::File;
 use std::io::{self, BufRead, ErrorKind, Write};
 use std::ops::{Add, Mul};
 use std::process;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 
 const REGULAR_PAIR: i16 = 0;
 const HIGHLIGHT_PAIR: i16 = 1;
@@ -299,16 +301,29 @@ fn main() {
     initscr();
     noecho();
     curs_set(CURSOR_VISIBILITY::CURSOR_INVISIBLE);
+    // Human's brain collects events happend in 100 ms for processing them
+    // in once "package", that is why response in 100 ms feels immediate.
+    // Running infitite loop 10 times per second is not as efficient as in
+    // case of blocking mode, but prevents from synchronization workaround.
+    // see "timeout": http://www.manpagez.com/man/3/curs_inopts/
+    timeout(100);
 
     start_color();
     init_pair(REGULAR_PAIR, COLOR_WHITE, COLOR_BLACK);
     init_pair(HIGHLIGHT_PAIR, COLOR_BLACK, COLOR_WHITE);
 
-    let mut quit = false;
+    let quit = Arc::new(AtomicBool::new(false));
+    {
+        let quit = Arc::clone(&quit);
+        ctrlc::set_handler(move || {
+            quit.store(true, Ordering::SeqCst);
+        })
+        .expect("Error setting Ctrl-C handler");
+    }
     let mut panel = Status::Todo;
 
     let mut ui = Ui::default();
-    while !quit {
+    while !quit.load(Ordering::SeqCst) {
         erase();
 
         let mut x = 0;
@@ -381,7 +396,7 @@ fn main() {
 
         let key = getch();
         match key as u8 as char {
-            'q' => quit = true,
+            'q' => quit.store(true, Ordering::SeqCst),
             'K' => match panel {
                 Status::Todo => list_drag_up(&mut todos, &mut todo_curr),
                 Status::Done => list_drag_up(&mut dones, &mut done_curr),

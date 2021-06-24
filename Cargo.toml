@@ -7,3 +7,4 @@ edition = "2018"
 
 [dependencies]
 ncurses = "5.101.0"
+ctrlc = "3.1.9"
