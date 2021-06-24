@@ -333,7 +333,6 @@ fn main() {
         ui.begin(Vec2::new(0, 0), LayoutKind::Vert);
         {
             ui.label_fixed_width(&notification, x, REGULAR_PAIR);
-            notification.clear();
             ui.label_fixed_width("", x, REGULAR_PAIR);
 
             ui.begin_layout(LayoutKind::Horz);
@@ -395,6 +394,9 @@ fn main() {
         refresh();
 
         let key = getch();
+        if key != ERR {
+            notification.clear();
+        }
         match key as u8 as char {
             'q' => quit.store(true, Ordering::SeqCst),
             'K' => match panel {
