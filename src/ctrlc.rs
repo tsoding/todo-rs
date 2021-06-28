@@ -4,7 +4,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 // It's not that important right now, since ncurses crate already prevents it from working properly
 // on windows anyway.
 #[cfg(not(unix))]
-compile_error!{"Windows is not supported right now"}
+compile_error! {"Windows is not supported right now"}
 
 // We are just trying to flip a bunch of bits in a single-threaded environment with no plans of
 // making it multi-threaded. No need to make it overcomplicated. Just a single atomic bool with
@@ -24,7 +24,7 @@ pub fn init() {
             // signal(2) usually fails when the first argument is invalid. This means we are
             // on a really weird UNIX or there is a bug in libc crate.
             unreachable!()
-        } 
+        }
     }
 }
 
