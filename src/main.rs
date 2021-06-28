@@ -456,6 +456,9 @@ fn main() {
                                     editing = true;
                                     notification.push_str("What needs to be done?");
                                 }
+                                'd' => {
+                                    notification.push_str("Can't remove items from TODO. Mark it as DONE first.");
+                                }
                                 'k' => list_up(&mut todo_curr),
                                 'j' => list_down(&todos, &mut todo_curr),
                                 'g' => list_first(&mut todo_curr),
