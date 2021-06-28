@@ -83,6 +83,7 @@ impl Layout {
 #[derive(Default)]
 struct Ui {
     layouts: Vec<Layout>,
+    key: Option<i32>,
 }
 
 impl Ui {
@@ -136,13 +137,7 @@ impl Ui {
     }
 
     // TODO(#26): Ui::edit_field does not scroll according to the cursor
-    fn edit_field(
-        &mut self,
-        buffer: &mut String,
-        cursor: &mut usize,
-        key_current: &mut Option<i32>,
-        width: i32,
-    ) {
+    fn edit_field(&mut self, buffer: &mut String, cursor: &mut usize, width: i32) {
         let layout = self
             .layouts
             .last_mut()
@@ -153,7 +148,7 @@ impl Ui {
             *cursor = buffer.len();
         }
 
-        if let Some(key) = key_current.take() {
+        if let Some(key) = self.key.take() {
             match key {
                 32..=126 => {
                     if *cursor >= buffer.len() {
@@ -187,7 +182,7 @@ impl Ui {
                     }
                 }
                 _ => {
-                    *key_current = Some(key);
+                    self.key = Some(key);
                 }
             }
         }
@@ -391,7 +386,6 @@ fn main() {
     let mut editing_cursor = 0;
 
     let mut ui = Ui::default();
-    let mut key_current = None;
     while !quit && !ctrlc::poll() {
         erase();
 
@@ -414,15 +408,9 @@ fn main() {
                         for (index, todo) in todos.iter_mut().enumerate() {
                             if index == todo_curr {
                                 if editing {
-                                    ui.edit_field(
-                                        todo,
-                                        &mut editing_cursor,
-                                        &mut key_current,
-                                        x / 2,
-                                    );
+                                    ui.edit_field(todo, &mut editing_cursor, x / 2);
 
-                                    if let Some('\n') = key_current.take().map(|x| x as u8 as char)
-                                    {
+                                    if let Some('\n') = ui.key.take().map(|x| x as u8 as char) {
                                         editing = false;
                                     }
                                 } else {
@@ -431,10 +419,10 @@ fn main() {
                                         x / 2,
                                         HIGHLIGHT_PAIR,
                                     );
-                                    if let Some('r') = key_current.map(|x| x as u8 as char) {
+                                    if let Some('r') = ui.key.map(|x| x as u8 as char) {
                                         editing = true;
                                         editing_cursor = todo.len();
-                                        key_current = None;
+                                        ui.key = None;
                                     }
                                 }
                             } else {
@@ -446,7 +434,7 @@ fn main() {
                             }
                         }
 
-                        if let Some(key) = key_current.take() {
+                        if let Some(key) = ui.key.take() {
                             match key as u8 as char {
                                 'K' => list_drag_up(&mut todos, &mut todo_curr),
                                 'J' => list_drag_down(&mut todos, &mut todo_curr),
@@ -473,7 +461,7 @@ fn main() {
                                     panel = panel.toggle();
                                 }
                                 _ => {
-                                    key_current = Some(key);
+                                    ui.key = Some(key);
                                 }
                             }
                         }
@@ -493,15 +481,9 @@ fn main() {
                         for (index, done) in dones.iter_mut().enumerate() {
                             if index == done_curr {
                                 if editing {
-                                    ui.edit_field(
-                                        done,
-                                        &mut editing_cursor,
-                                        &mut key_current,
-                                        x / 2,
-                                    );
+                                    ui.edit_field(done, &mut editing_cursor, x / 2);
 
-                                    if let Some('\n') = key_current.take().map(|x| x as u8 as char)
-                                    {
+                                    if let Some('\n') = ui.key.take().map(|x| x as u8 as char) {
                                         editing = false;
                                     }
                                 } else {
@@ -510,10 +492,10 @@ fn main() {
                                         x / 2,
                                         HIGHLIGHT_PAIR,
                                     );
-                                    if let Some('r') = key_current.map(|x| x as u8 as char) {
+                                    if let Some('r') = ui.key.map(|x| x as u8 as char) {
                                         editing = true;
                                         editing_cursor = done.len();
-                                        key_current = None;
+                                        ui.key = None;
                                     }
                                 }
                             } else {
@@ -525,7 +507,7 @@ fn main() {
                             }
                         }
 
-                        if let Some(key) = key_current.take() {
+                        if let Some(key) = ui.key.take() {
                             match key as u8 as char {
                                 'K' => list_drag_up(&mut dones, &mut done_curr),
                                 'J' => list_drag_down(&mut dones, &mut done_curr),
@@ -549,7 +531,7 @@ fn main() {
                                 '\t' => {
                                     panel = panel.toggle();
                                 }
-                                _ => key_current = Some(key),
+                                _ => ui.key = Some(key),
                             }
                         }
                     } else {
@@ -565,7 +547,7 @@ fn main() {
         }
         ui.end();
 
-        if let Some('q') = key_current.take().map(|x| x as u8 as char) {
+        if let Some('q') = ui.key.take().map(|x| x as u8 as char) {
             quit = true;
         }
 
@@ -574,7 +556,7 @@ fn main() {
         let key = getch();
         if key != ERR {
             notification.clear();
-            key_current = Some(key);
+            ui.key = Some(key);
         }
     }
 
