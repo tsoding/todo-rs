@@ -17,7 +17,7 @@ extern "C" fn callback(_signum: i32) {
 
 pub fn init() {
     unsafe {
-        // TODO: Use sigaction(2) instead of signal(2) for better potability
+        // TODO(#24): Use sigaction(2) instead of signal(2) for better potability
         // See signal(2) Portability section. Though for our specific case of flipping some bits on
         // SIGINT this might not be that important.
         if libc::signal(libc::SIGINT, callback as libc::sighandler_t) == libc::SIG_ERR {
