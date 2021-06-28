@@ -16,6 +16,8 @@ $ cargo run TODO
 |---|---|
 |<kbd>k</kbd>, <kbd>j</kbd>|Move cursor up and down|
 |<kbd>Shift+K</kbd>, <kbd>Shift+J</kbd>|Drag the current item up and down|
+|<kbd>g</kbd>, <kbd>G</kbd> | Jump to the start, end of the current item list|
+|<kbd>r</kbd>|Rename the current item|
 |<kbd>d</kbd>|Delete the current list item|
 |<kbd>q</kbd>|Quit|
 |<kbd>TAB</kbd>|Switch between the TODO and DONE panels|

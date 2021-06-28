@@ -409,7 +409,7 @@ fn main() {
                                     }
                                 } else {
                                     ui.label_fixed_width(&format!("- [ ] {}", todo), x / 2, HIGHLIGHT_PAIR);
-                                    if let Some('i') = key_current.map(|x| x as u8 as char) {
+                                    if let Some('r') = key_current.map(|x| x as u8 as char) {
                                         editing = true;
                                         editing_cursor = todo.len();
                                         key_current = None;
@@ -463,7 +463,7 @@ fn main() {
                                     }
                                 } else {
                                     ui.label_fixed_width(&format!("- [x] {}", done), x / 2, HIGHLIGHT_PAIR);
-                                    if let Some('i') = key_current.map(|x| x as u8 as char) {
+                                    if let Some('r') = key_current.map(|x| x as u8 as char) {
                                         editing = true;
                                         editing_cursor = done.len();
                                         key_current = None;
