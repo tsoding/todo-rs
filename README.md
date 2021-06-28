@@ -1,6 +1,6 @@
 # todo-rs
 
-Simple Interactive Terminal Todo App in Rust
+Simple Interactive Terminal Todo App in Rust. This is meant to be an experimental playground for testing ideas on Immediate TUIs.
 
 ![thumbnail](thumbnail.png)
 
