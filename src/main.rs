@@ -450,6 +450,12 @@ fn main() {
                             match key as u8 as char {
                                 'K' => list_drag_up(&mut todos, &mut todo_curr),
                                 'J' => list_drag_down(&mut todos, &mut todo_curr),
+                                'i' => {
+                                    todos.insert(todo_curr, String::new());
+                                    editing_cursor = 0;
+                                    editing = true;
+                                    notification.push_str("What needs to be done?");
+                                }
                                 'k' => list_up(&mut todo_curr),
                                 'j' => list_down(&todos, &mut todo_curr),
                                 'g' => list_first(&mut todo_curr),
