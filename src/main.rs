@@ -135,7 +135,7 @@ impl Ui {
         layout.add_widget(Vec2::new(width, 1));
     }
 
-    // TODO: Ui::edit_field does not scroll according to the cursor
+    // TODO(#26): Ui::edit_field does not scroll according to the cursor
     fn edit_field(
         &mut self,
         buffer: &mut String,
