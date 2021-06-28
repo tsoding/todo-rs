@@ -410,7 +410,7 @@ fn main() {
                 {
                     if panel == Status::Todo {
                         ui.label_fixed_width("TODO", x / 2, HIGHLIGHT_PAIR);
-                        // TODO: the item lists don't have a scroll area
+                        // TODO(#27): the item lists don't have a scroll area
                         for (index, todo) in todos.iter_mut().enumerate() {
                             if index == todo_curr {
                                 if editing {
