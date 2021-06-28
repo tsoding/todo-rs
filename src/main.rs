@@ -450,6 +450,17 @@ fn main() {
                             match key as u8 as char {
                                 'K' => list_drag_up(&mut todos, &mut todo_curr),
                                 'J' => list_drag_down(&mut todos, &mut todo_curr),
+                                'i' => {
+                                    todos.insert(todo_curr, String::new());
+                                    editing_cursor = 0;
+                                    editing = true;
+                                    notification.push_str("What needs to be done?");
+                                }
+                                'd' => {
+                                    notification.push_str(
+                                        "Can't remove items from TODO. Mark it as DONE first.",
+                                    );
+                                }
                                 'k' => list_up(&mut todo_curr),
                                 'j' => list_down(&todos, &mut todo_curr),
                                 'g' => list_first(&mut todo_curr),
@@ -522,6 +533,11 @@ fn main() {
                                 'j' => list_down(&dones, &mut done_curr),
                                 'g' => list_first(&mut done_curr),
                                 'G' => list_last(&dones, &mut done_curr),
+                                'i' => {
+                                    notification.push_str(
+                                        "Can't insert new DONE items. Only TODO is allowed.",
+                                    );
+                                }
                                 'd' => {
                                     list_delete(&mut dones, &mut done_curr);
                                     notification.push_str("Into The Abyss!");
