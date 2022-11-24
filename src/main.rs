@@ -223,6 +223,12 @@ enum Status {
     Done,
 }
 
+enum EditMode {
+    Not,
+    New,
+    Editing,
+}
+
 impl Status {
     fn toggle(&self) -> Self {
         match self {
@@ -337,6 +343,10 @@ fn save_state(todos: &[String], dones: &[String], file_path: &str) {
 fn main() {
     ctrlc::init();
 
+    // On some old terminals ESC was used instead of ALT. So we have to tell ncurses not to wait
+    // for another key when receiving ESC.
+    set_escdelay(0);
+
     let mut args = env::args();
     args.next().unwrap();
 
@@ -382,7 +392,7 @@ fn main() {
 
     let mut quit = false;
     let mut panel = Status::Todo;
-    let mut editing = false;
+    let mut editing = EditMode::Not;
     let mut editing_cursor = 0;
 
     let mut ui = Ui::default();
@@ -407,11 +417,19 @@ fn main() {
                         // TODO(#27): the item lists don't have a scroll area
                         for (index, todo) in todos.iter_mut().enumerate() {
                             if index == todo_curr {
-                                if editing {
+                                if let EditMode::Editing | EditMode::New = editing {
                                     ui.edit_field(todo, &mut editing_cursor, x / 2);
 
-                                    if let Some('\n') = ui.key.take().map(|x| x as u8 as char) {
-                                        editing = false;
+                                    match ui.key.take().map(|x| x as u8 as char) {
+                                        Some('\n') => editing = EditMode::Not,
+                                        Some('\u{1b}') => {
+                                            if let EditMode::New = editing {
+                                                list_delete(&mut todos, &mut todo_curr);
+                                            }
+                                            editing = EditMode::Not;
+                                            break;
+                                        }
+                                        _ => {}
                                     }
                                 } else {
                                     ui.label_fixed_width(
@@ -420,7 +438,7 @@ fn main() {
                                         HIGHLIGHT_PAIR,
                                     );
                                     if let Some('r') = ui.key.map(|x| x as u8 as char) {
-                                        editing = true;
+                                        editing = EditMode::Editing;
                                         editing_cursor = todo.len();
                                         ui.key = None;
                                     }
@@ -441,7 +459,7 @@ fn main() {
                                 'i' => {
                                     todos.insert(todo_curr, String::new());
                                     editing_cursor = 0;
-                                    editing = true;
+                                    editing = EditMode::New;
                                     notification.push_str("What needs to be done?");
                                 }
                                 'd' => {
@@ -480,11 +498,13 @@ fn main() {
                         ui.label_fixed_width("DONE", x / 2, HIGHLIGHT_PAIR);
                         for (index, done) in dones.iter_mut().enumerate() {
                             if index == done_curr {
-                                if editing {
+                                if let EditMode::Editing = editing {
                                     ui.edit_field(done, &mut editing_cursor, x / 2);
 
-                                    if let Some('\n') = ui.key.take().map(|x| x as u8 as char) {
-                                        editing = false;
+                                    if let Some('\n') | Some('\u{1b}') =
+                                        ui.key.take().map(|x| x as u8 as char)
+                                    {
+                                        editing = EditMode::Not;
                                     }
                                 } else {
                                     ui.label_fixed_width(
@@ -493,7 +513,7 @@ fn main() {
                                         HIGHLIGHT_PAIR,
                                     );
                                     if let Some('r') = ui.key.map(|x| x as u8 as char) {
-                                        editing = true;
+                                        editing = EditMode::Editing;
                                         editing_cursor = done.len();
                                         ui.key = None;
                                     }
