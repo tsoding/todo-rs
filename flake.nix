@@ -69,10 +69,10 @@
           inputsFrom = with pkgs; [
             pkgs."${cargoToml.package.name}"
           ];
-          shellHook = ''
-            echo "starting todo list app"
-            cargo run TODO
-          '';
+          # shellHook = ''
+          #   echo "starting todo list app"
+          #   cargo run TODO
+          # '';
           buildInputs = with pkgs; [
             cargo 
             rustc 
