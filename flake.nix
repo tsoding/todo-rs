@@ -69,9 +69,9 @@
           inputsFrom = with pkgs; [
             pkgs."${cargoToml.package.name}"
           ];
-          # shellHook = ''
-          #   cargo run TODO
-          # '';
+          shellHook = ''
+            cargo run TODO
+          '';
           buildInputs = with pkgs; [
             rustfmt
             nixpkgs-fmt
