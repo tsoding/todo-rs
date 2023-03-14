@@ -50,7 +50,7 @@
         {
           format = pkgs.runCommand "check-format"
             {
-              buildInputs = with pkgs; [ rustfmt cargo ];
+              buildInputs = with pkgs; [ cargo rustc glibc ncurses ];
             } ''
             ${pkgs.rustfmt}/bin/cargo-fmt fmt --manifest-path ${./.}/Cargo.toml -- --check
             ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
