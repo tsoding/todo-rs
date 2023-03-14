@@ -50,7 +50,7 @@
         {
           format = pkgs.runCommand "check-format"
             {
-              buildInputs = with pkgs; [ cargo rustc glibc ncurses ];
+              buildInputs = with pkgs; [ cargo rustc ncurses ];
             } ''
             ${pkgs.rustfmt}/bin/cargo-fmt fmt --manifest-path ${./.}/Cargo.toml -- --check
             ${pkgs.nixpkgs-fmt}/bin/nixpkgs-fmt --check ${./.}
@@ -69,9 +69,15 @@
           inputsFrom = with pkgs; [
             pkgs."${cargoToml.package.name}"
           ];
+          # shellHook = ''
+          #   cargo run TODO
+          # '';
           buildInputs = with pkgs; [
             rustfmt
             nixpkgs-fmt
+            cargo 
+            rustc 
+            ncurses
           ];
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
         });
