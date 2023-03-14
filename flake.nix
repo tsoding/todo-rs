@@ -1,6 +1,6 @@
 # flake.nix
 {
-  description = "My cute Rust crate!";
+  description = "todo-rs";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
@@ -70,11 +70,10 @@
             pkgs."${cargoToml.package.name}"
           ];
           shellHook = ''
+            echo "starting todo list app"
             cargo run TODO
           '';
           buildInputs = with pkgs; [
-            rustfmt
-            nixpkgs-fmt
             cargo 
             rustc 
             ncurses
