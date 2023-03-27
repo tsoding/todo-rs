@@ -176,6 +176,16 @@ impl Ui {
                         }
                     }
                 }
+                // Backspace code on macOs + iTerm2
+                // source: https://stackoverflow.com/questions/27200597/c-ncurses-key-backspace-not-working
+                127 => {
+                    if *cursor > 0 {
+                        *cursor -= 1;
+                        if *cursor < buffer.len() {
+                            buffer.remove(*cursor);
+                        }
+                    }
+                }
                 constants::KEY_DC => {
                     if *cursor < buffer.len() {
                         buffer.remove(*cursor);
